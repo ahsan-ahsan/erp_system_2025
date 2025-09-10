@@ -8,15 +8,17 @@ interface User {
   email: string
   firstName: string
   lastName: string
-  role: "admin" | "manager" | "employee" | "viewer"
+  role: string
   avatar?: string
+  phone?: string
+  address?: string
 }
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => void
   hasRole: (roles: string[]) => boolean
 }
@@ -32,10 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     const checkAuth = async () => {
       try {
-        // In a real app, this would check localStorage, cookies, or make an API call
-        const savedUser = localStorage.getItem("user")
-        if (savedUser) {
-          setUser(JSON.parse(savedUser))
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setUser(data.user)
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error)
@@ -49,61 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock authentication logic
-      if (email === "admin@example.com" && password === "password") {
-        const mockUser: User = {
-          id: "1",
-          email: "admin@example.com",
-          firstName: "John",
-          lastName: "Doe",
-          role: "admin",
-          avatar: "/avatars/01.png"
-        }
-        
-        setUser(mockUser)
-        localStorage.setItem("user", JSON.stringify(mockUser))
-        return true
-      } else if (email === "manager@example.com" && password === "password") {
-        const mockUser: User = {
-          id: "2",
-          email: "manager@example.com",
-          firstName: "Jane",
-          lastName: "Smith",
-          role: "manager",
-          avatar: "/avatars/02.png"
-        }
-        
-        setUser(mockUser)
-        localStorage.setItem("user", JSON.stringify(mockUser))
-        return true
-      } else if (email === "employee@example.com" && password === "password") {
-        const mockUser: User = {
-          id: "3",
-          email: "employee@example.com",
-          firstName: "Bob",
-          lastName: "Johnson",
-          role: "employee",
-          avatar: "/avatars/03.png"
-        }
-        
-        setUser(mockUser)
-        localStorage.setItem("user", JSON.stringify(mockUser))
-        return true
-      } else if (email === "viewer@example.com" && password === "password") {
-        const mockUser: User = {
-          id: "4",
-          email: "viewer@example.com",
-          firstName: "Alice",
-          lastName: "Brown",
-          role: "viewer",
-          avatar: "/avatars/04.png"
-        }
-        
-        setUser(mockUser)
-        localStorage.setItem("user", JSON.stringify(mockUser))
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setUser(data.user)
         return true
       }
       
@@ -114,22 +79,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("user")
-    router.push("/auth/login")
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (error) {
+      console.error("Logout failed:", error)
+    } finally {
+      setUser(null)
+      router.push('/auth/login')
+    }
   }
 
   const updateUser = (userData: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...userData }
-      setUser(updatedUser)
-      localStorage.setItem("user", JSON.stringify(updatedUser))
+      setUser({ ...user, ...userData })
     }
   }
 
   const hasRole = (roles: string[]): boolean => {
-    return user ? roles.includes(user.role) : false
+    if (!user) return false
+    return roles.includes(user.role.toLowerCase())
   }
 
   return (
