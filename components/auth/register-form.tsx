@@ -23,7 +23,6 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "@/components/auth/auth-context"
 
 const registerSchema = z.object({
   firstName: z.string().min(2, {
@@ -49,12 +48,11 @@ const registerSchema = z.object({
   path: ["confirmPassword"],
 })
 
-export default function RegisterPage() {
+export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { login } = useAuth()
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -72,47 +70,13 @@ export default function RegisterPage() {
     setIsLoading(true)
     
     try {
-      // Register user
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          password: values.password,
-          role: 'EMPLOYEE'
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        toast.success(data.message || "Account created successfully!")
-        
-        // Auto-login after successful registration
-        const loginSuccess = await login(values.email, values.password)
-        
-        if (loginSuccess) {
-          toast.success("Welcome! You are now logged in.")
-          // Small delay to ensure auth context is updated
-          setTimeout(() => {
-            router.push("/")
-          }, 100)
-        } else {
-          // If auto-login fails, redirect to login page
-          toast.info("Account created! Please log in to continue.")
-          router.push("/auth/login")
-        }
-      } else {
-        const errorMessage = data.error || "Registration failed. Please try again."
-        toast.error(errorMessage)
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      toast.success("Account created successfully!")
+      router.push("/auth/login")
     } catch (error) {
-      console.error('Registration error:', error)
-      toast.error("An unexpected error occurred. Please try again.")
+      toast.error("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -158,7 +122,6 @@ export default function RegisterPage() {
                             <Input
                               placeholder="John"
                               className="pl-10"
-                              disabled={isLoading}
                               {...field}
                             />
                           </div>
@@ -177,7 +140,6 @@ export default function RegisterPage() {
                         <FormControl>
                           <Input
                             placeholder="Doe"
-                            disabled={isLoading}
                             {...field}
                           />
                         </FormControl>
@@ -200,7 +162,6 @@ export default function RegisterPage() {
                             placeholder="john@example.com"
                             type="email"
                             className="pl-10"
-                            disabled={isLoading}
                             {...field}
                           />
                         </div>
@@ -223,7 +184,6 @@ export default function RegisterPage() {
                             placeholder="Create a password"
                             type={showPassword ? "text" : "password"}
                             className="pl-10 pr-10"
-                            disabled={isLoading}
                             {...field}
                           />
                           <Button
@@ -232,7 +192,6 @@ export default function RegisterPage() {
                             size="icon"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
-                            disabled={isLoading}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -260,7 +219,6 @@ export default function RegisterPage() {
                             placeholder="Confirm your password"
                             type={showConfirmPassword ? "text" : "password"}
                             className="pl-10 pr-10"
-                            disabled={isLoading}
                             {...field}
                           />
                           <Button
@@ -269,7 +227,6 @@ export default function RegisterPage() {
                             size="icon"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            disabled={isLoading}
                           >
                             {showConfirmPassword ? (
                               <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -293,7 +250,6 @@ export default function RegisterPage() {
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          disabled={isLoading}
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
@@ -333,7 +289,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <Button variant="outline" className="w-full" disabled={isLoading}>
+              <Button variant="outline" className="w-full">
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -354,7 +310,7 @@ export default function RegisterPage() {
                 </svg>
                 Google
               </Button>
-              <Button variant="outline" className="w-full" disabled={isLoading}>
+              <Button variant="outline" className="w-full">
                 <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>

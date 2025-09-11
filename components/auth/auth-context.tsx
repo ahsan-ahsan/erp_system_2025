@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => void
   hasRole: (roles: string[]) => boolean
+  setUser: (user: User | null) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -31,9 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session on mount
     const checkAuth = async () => {
       try {
+        // First check localStorage for immediate UI update
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          setUser(JSON.parse(storedUser))
+        }
+
+        // Then verify with server
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
         })
@@ -42,10 +50,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await response.json()
           if (data.success) {
             setUser(data.user)
+            localStorage.setItem('user', JSON.stringify(data.user))
+          } else {
+            // Server says no valid session, clear local storage
+            localStorage.removeItem('user')
+            localStorage.removeItem('token')
+            setUser(null)
           }
+        } else {
+          // Server error, clear local storage
+          localStorage.removeItem('user')
+          localStorage.removeItem('token')
+          setUser(null)
         }
       } catch (error) {
         console.error("Auth check failed:", error)
+        // Network error, clear local storage
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
@@ -69,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.user)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        localStorage.setItem('token', data.token)
         return true
       }
       
@@ -89,13 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout failed:", error)
     } finally {
       setUser(null)
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
       router.push('/auth/login')
     }
   }
 
   const updateUser = (userData: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...userData })
+      const updatedUser = { ...user, ...userData }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
     }
   }
 
@@ -113,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         hasRole,
+        setUser,
       }}
     >
       {children}

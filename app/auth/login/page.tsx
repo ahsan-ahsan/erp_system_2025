@@ -55,11 +55,17 @@ export default function LoginPage() {
       
       if (success) {
         toast.success("Login successful!")
-        router.push("/")
+        
+        // Small delay to ensure auth context is updated
+        setTimeout(() => {
+          router.push("/")
+        }, 100)
       } else {
         toast.error("Invalid email or password")
+        form.setValue('password', '')
       }
     } catch (error) {
+      console.error('Login error:', error)
       toast.error("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -106,6 +112,7 @@ export default function LoginPage() {
                             placeholder="Enter your email"
                             type="email"
                             className="pl-10"
+                            disabled={isLoading}
                             {...field}
                           />
                         </div>
@@ -128,6 +135,7 @@ export default function LoginPage() {
                             placeholder="Enter your password"
                             type={showPassword ? "text" : "password"}
                             className="pl-10 pr-10"
+                            disabled={isLoading}
                             {...field}
                           />
                           <Button
@@ -136,6 +144,7 @@ export default function LoginPage() {
                             size="icon"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={isLoading}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4 text-muted-foreground" />
