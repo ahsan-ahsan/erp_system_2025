@@ -9,21 +9,15 @@ import {
   BarChart3,
   Users,
   Settings,
-  FileText,
-  CreditCard,
   Truck,
   Warehouse,
-  Calendar,
   HelpCircle,
   LogOut,
-  Shield,
   UserCog,
   ChevronDown,
   ChevronRight,
   UserPlus,
   UserCheck,
-  Clock,
-  Building2
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -54,89 +48,89 @@ const menuItems = [
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
   {
     title: "Products",
     url: "/products",
     icon: Package,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
     subItems: [
-      { title: "All Products", url: "/products", roles: ["admin", "manager", "employee"] },
+      { title: "All Products", url: "/products", roles: ["manager", "employee"] },
     ],
   },
   {
     title: "Customers",
     url: "/customers",
     icon: Users,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
     subItems: [
-      { title: "All Customers", url: "/customers", roles: ["admin", "manager", "employee"] },
+      { title: "All Customers", url: "/customers", roles: ["manager", "employee"] },
     ],
   },
   {
     title: "Suppliers",
     url: "/suppliers",
     icon: Truck,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
   },
   {
     title: "Purchases",
     url: "/purchases",
     icon: Package,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
     subItems: [
-      { title: "Purchase Orders", url: "/purchases", roles: ["admin", "manager", "employee"] },
+      { title: "Purchase Orders", url: "/purchases", roles: ["manager", "employee"] },
     ],
   },
   {
     title: "Inventory",
     url: "/inventory",
     icon: Warehouse,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
     subItems: [
-      { title: "Stock Overview", url: "/inventory", roles: ["admin", "manager", "employee"] },
+      { title: "Stock Overview", url: "/inventory", roles: ["manager", "employee"] },
     ],
   },
   {
     title: "Sales",
     url: "/sales",
     icon: ShoppingCart,
-    roles: ["admin", "manager", "employee"],
+    roles: ["manager", "employee"],
     subItems: [
-      { title: "Dashboard", url: "/sales/dashboard", roles: ["admin", "manager", "employee"] },
-      { title: "POS", url: "/sales/pos", roles: ["admin", "manager", "employee"] },
-      { title: "Transactions", url: "/sales/transactions", roles: ["admin", "manager", "employee"] },
+      { title: "Dashboard", url: "/sales/dashboard", roles: ["manager", "employee"] },
+      { title: "POS", url: "/sales/pos", roles: ["manager", "employee"] },
+      { title: "Transactions", url: "/sales/transactions", roles: ["manager", "employee"] },
     ],
   },
   {
     title: "HR Management",
     url: "/hr",
     icon: UserCheck,
-    roles: ["admin", "manager", "hr"],
+    roles: ["manager", "hr"],
     subItems: [
-      { title: "Employee Management", url: "/hr", roles: ["admin", "manager", "hr"] },
-      { title: "Attendance", url: "/hr", roles: ["admin", "manager", "hr"] },
-      { title: "Payroll", url: "/hr", roles: ["admin", "manager", "hr"] },
+      { title: "Employee Management", url: "/hr", roles: ["manager", "hr"] },
+      { title: "Attendance", url: "/hr", roles: ["manager", "hr"] },
+      { title: "Payroll", url: "/hr", roles: ["manager", "hr"] },
     ],
   },
   {
     title: "Reports",
     url: "/reports",
     icon: BarChart3,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
   {
     title: "Profile",
     url: "/profile",
     icon: UserCog,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
   {
     title: "Demo",
     url: "/demo",
     icon: HelpCircle,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
 ]
 
@@ -145,7 +139,7 @@ const adminMenuItems = [
     title: "User Management",
     url: "/users",
     icon: UserPlus,
-    roles: ["admin"],
+    roles: ["admin"], // sirf admin ke liye
     subItems: [
       { title: "All Users", url: "/users", roles: ["admin"] },
       { title: "Roles & Permissions", url: "/users/roles", roles: ["admin"] },
@@ -158,19 +152,19 @@ const bottomMenuItems = [
     title: "Settings",
     url: "/settings",
     icon: Settings,
-    roles: ["admin", "manager"],
+    roles: ["manager"],
   },
   {
     title: "Help",
     url: "/help",
     icon: HelpCircle,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
   {
     title: "Logout",
     url: "/logout",
     icon: LogOut,
-    roles: ["admin", "manager", "employee", "viewer"],
+    roles: ["manager", "employee", "viewer"],
   },
 ]
 
@@ -193,7 +187,7 @@ export function AppSidebar() {
     <RoleGuard
       key={item.title}
       allowedRoles={item.roles}
-      userRole={user?.role || "viewer"}
+      userRole={user?.role ? user.role.toLowerCase() : "viewer"}
       showTooltip={true}
       tooltipMessage={`${item.title} - Permission Required`}
     >
@@ -240,7 +234,7 @@ export function AppSidebar() {
                     <RoleGuard
                       key={subItem.title}
                       allowedRoles={subItem.roles}
-                      userRole={user?.role || "viewer"}
+                      userRole={user?.role ? user.role.toLowerCase() : "viewer"}
                       showTooltip={true}
                       tooltipMessage={`${subItem.title} - Permission Required`}
                     >

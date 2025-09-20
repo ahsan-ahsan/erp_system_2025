@@ -1,10 +1,8 @@
 "use client"
 
 import { ReactNode } from "react"
-import { motion } from "framer-motion"
 import { Lock } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +13,7 @@ import {
 interface RoleGuardProps {
   children: ReactNode
   allowedRoles: string[]
-  userRole: string
+  userRole: any
   fallback?: ReactNode
   showTooltip?: boolean
   tooltipMessage?: string
@@ -29,7 +27,8 @@ export function RoleGuard({
   showTooltip = true,
   tooltipMessage = "Permission Required"
 }: RoleGuardProps) {
-  const hasAccess = allowedRoles.includes(userRole)
+  // ✅ admin bypass
+  const hasAccess = userRole === "admin" || allowedRoles.includes(userRole)
 
   if (hasAccess) {
     return <>{children}</>
@@ -74,10 +73,11 @@ export function RoleGuard({
 
 // Hook for role-based access
 export function useRoleAccess(userRole: string) {
-  const hasRole = (roles: string[]) => roles.includes(userRole)
-  
+  const hasRole = (roles: string[]) =>
+    userRole === "admin" || roles.includes(userRole) // ✅ admin bypass
+
   const canAccess = (requiredRoles: string[]) => hasRole(requiredRoles)
-  
+
   const isAdmin = userRole === "admin"
   const isManager = ["admin", "manager"].includes(userRole)
   const isEmployee = ["admin", "manager", "employee"].includes(userRole)

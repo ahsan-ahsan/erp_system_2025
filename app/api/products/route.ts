@@ -183,3 +183,115 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     )
   }
 })
+
+
+export const PUT = requireAuth(async (request: NextRequest, user) => {
+  try {
+    const { id, ...updates } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    const product = await prisma.product.findUnique({ where: { id } })
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    // Status calculate karo stock ke hisaab se
+    let status = product.status
+    if (updates.stock !== undefined) {
+      const stockVal = parseInt(updates.stock)
+      const minStockVal = updates.minStock !== undefined ? parseInt(updates.minStock) : product.minStock
+
+      if (stockVal === 0) status = 'OUT_OF_STOCK'
+      else if (stockVal <= minStockVal) status = 'LOW_STOCK'
+      else status = 'IN_STOCK'
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        name: updates.name ?? product.name,
+        sku: updates.sku ?? product.sku,
+        description: updates.description ?? product.description,
+        price: updates.price !== undefined ? parseFloat(updates.price) : product.price,
+        cost: updates.cost !== undefined ? parseFloat(updates.cost) : product.cost,
+        stock: updates.stock !== undefined ? parseInt(updates.stock) : product.stock,
+        minStock: updates.minStock !== undefined ? parseInt(updates.minStock) : product.minStock,
+        maxStock: updates.maxStock !== undefined ? parseInt(updates.maxStock) : product.maxStock,
+        reorderPoint: updates.reorderPoint !== undefined ? parseInt(updates.reorderPoint) : product.reorderPoint,
+        reorderQuantity: updates.reorderQuantity !== undefined ? parseInt(updates.reorderQuantity) : product.reorderQuantity,
+        image: updates.image ?? product.image,
+        specifications: updates.specifications ?? product.specifications,
+        status,
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+        supplier: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    })
+
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.userId,
+        action: 'UPDATE_PRODUCT',
+        description: `Updated product: ${updatedProduct.name}`,
+        module: 'PRODUCTS',
+        severity: 'MEDIUM',
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product updated successfully',
+      data: updatedProduct,
+    })
+  } catch (error) {
+    console.error('Update product error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+})
+
+
+// ========================= DELETE PRODUCT =========================
+export const DELETE = requireAuth(async (request: NextRequest, user) => {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
+    }
+
+    const product = await prisma.product.findUnique({ where: { id } })
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
+
+    await prisma.product.delete({ where: { id } })
+
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.userId,
+        action: 'DELETE_PRODUCT',
+        description: `Deleted product: ${product.name}`,
+        module: 'PRODUCTS',
+        severity: 'HIGH',
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product deleted successfully',
+    })
+  } catch (error) {
+    console.error('Delete product error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+})
