@@ -115,7 +115,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Create supplier
+    // ✅ Create supplier with categories fix
     const supplier = await prisma.supplier.create({
       data: {
         name,
@@ -127,13 +127,17 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         state,
         zipCode,
         country,
-        categories: categories || [],
+        categories: categories
+          ? (Array.isArray(categories)
+              ? categories
+              : categories.split(",").map((c: string) => c.trim()))
+          : [],
         rating: rating ? parseFloat(rating) : null,
         createdById: user.userId,
       },
       include: {
         createdBy: {
-          select: { id: true, firstName: true, lastName: true }
+          select: { id: true, firstName: true, lastName: true },
         },
       },
     })
@@ -151,11 +155,14 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Supplier created successfully',
-      data: supplier,
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Supplier created successfully',
+        data: supplier,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Create supplier error:', error)
     return NextResponse.json(
@@ -164,3 +171,56 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     )
   }
 })
+
+
+export const PATCH = requireAuth(async (request: NextRequest, user) => {
+  try {
+    const { supplierId, status } = await request.json()
+
+    if (!supplierId || !status) {
+      return NextResponse.json(
+        { error: 'Supplier ID and status are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!['active', 'inactive'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status value' },
+        { status: 400 }
+      )
+    }
+
+    // Update supplier status
+    const supplier = await prisma.supplier.update({
+      where: { id: supplierId },
+      data: { status },
+    })
+
+    // Log activity
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.userId,
+        action: 'UPDATE_SUPPLIER_STATUS',
+        description: `Updated supplier ${supplier.name} → ${status}`,
+        module: 'SUPPLIERS',
+        severity: 'MEDIUM',
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Supplier status updated successfully',
+      data: supplier,
+    })
+  } catch (error) {
+    console.error('Update supplier status error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+})
+

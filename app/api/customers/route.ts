@@ -162,3 +162,96 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     )
   }
 })
+
+
+
+export const PATCH = requireAuth(async (request: NextRequest, user) => {
+  try {
+    const { customerId, status } = await request.json()
+
+    if (!customerId || !status) {
+      return NextResponse.json(
+        { error: 'Customer ID and status are required' },
+        { status: 400 }
+      )
+    }
+
+    // Update status
+    const customer = await prisma.customer.update({
+      where: { id: customerId },
+      data: { status },
+    })
+
+    // Log activity
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.userId,
+        action: 'UPDATE_CUSTOMER_STATUS',
+        description: `Updated customer status: ${customer.firstName} ${customer.lastName} → ${status}`,
+        module: 'CUSTOMERS',
+        severity: 'MEDIUM',
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Customer status updated successfully',
+      data: customer,
+    })
+  } catch (error) {
+    console.error('Update customer status error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+})
+
+
+// ==========================
+// Delete Customer API
+// ==========================
+export const DELETE = requireAuth(async (request: NextRequest, user) => {
+  try {
+    const { searchParams } = new URL(request.url)
+    const customerId = searchParams.get('id')
+
+    if (!customerId) {
+      return NextResponse.json(
+        { error: 'Customer ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Delete customer
+    const customer = await prisma.customer.delete({
+      where: { id: customerId },
+    })
+
+    // Log activity
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.userId,
+        action: 'DELETE_CUSTOMER',
+        description: `Deleted customer: ${customer.firstName} ${customer.lastName}`,
+        module: 'CUSTOMERS',
+        severity: 'HIGH',
+        ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Customer deleted successfully',
+    })
+  } catch (error) {
+    console.error('Delete customer error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+})

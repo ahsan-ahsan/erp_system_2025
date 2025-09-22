@@ -401,6 +401,7 @@ export default function ProductsPage() {
                           </Button>
                         </TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
                         <TableHead />
                       </TableRow>
                     </TableHeader>
@@ -428,7 +429,7 @@ export default function ProductsPage() {
                               <div>
                                 <div className="font-medium">{p.name}</div>
                                 <div className="text-sm text-muted-foreground">
-                                  {p.description}
+                                  {p.description.slice(0,10)}...
                                 </div>
                               </div>
                             </div>
